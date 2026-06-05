@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      return isSignedIn() && (
+        request.auth.token.email_verified == true || 
+        request.auth.token.firebase.sign_in_provider == 'google.com'
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'abdulmannansaqib@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Validation Helper
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'phone'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 30
+        && (!('company' in data) || (data.company is string && data.company.size() <= 100))
+        && (!('website' in data) || (data.website is string && data.website.size() <= 150))
+        && (!('goal' in data) || (data.goal is string && data.goal.size() <= 200))
+        && (!('selectedPackage' in data) || (data.selectedPackage is string && data.selectedPackage.size() <= 100))
+        && (!('paymentStatus' in data) || (data.paymentStatus is string && (data.paymentStatus == 'unpaid' || data.paymentStatus == 'paid')));
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
+      
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().paymentStatus == 'unpaid'; // Must start unpaid
+        
+      allow update: if isSignedIn() 
+        && (request.auth.uid == userId || isAdmin())
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Admin can update anything including paymentStatus
+          isAdmin() || (
+            // Regular user cannot change paymentStatus
+            incoming().paymentStatus == existing().paymentStatus
+            && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'company', 'website', 'goal', 'selectedPackage', 'updatedAt'])
+          )
+        );
+        
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read, write: if isSignedIn() && isAdmin();
+    }
+  }
+}

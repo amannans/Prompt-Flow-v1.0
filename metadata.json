@@ -1,0 +1,6 @@
+{
+  "name": "Prompt Flow - UK Digital Marketing & AI Agency",
+  "description": "Prompt Flow is a UK-based digital marketing and AI automation agency helping businesses grow through SEO, Google Ads, Meta Ads, and AI solutions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

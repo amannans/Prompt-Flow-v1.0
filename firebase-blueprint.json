@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Client profile containing contact details, selected package, and payment status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique Firebase Auth User ID" },
+        "name": { "type": "string", "description": "Client's full name" },
+        "email": { "type": "string", "description": "Client's email" },
+        "phone": { "type": "string", "description": "Client's contact number" },
+        "company": { "type": "string", "description": "Client's company name" },
+        "website": { "type": "string", "description": "Client's website URL" },
+        "goal": { "type": "string", "description": "Client's primary business goal" },
+        "selectedPackage": { "type": "string", "description": "Name of the package they subscribed to" },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "paid"], "description": "Payment status of the package" },
+        "createdAt": { "type": "object", "description": "The timestamp of profile creation" },
+        "updatedAt": { "type": "object", "description": "The timestamp of profile update" }
+      },
+      "required": ["uid", "name", "email", "phone"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Trusted admin users who can access full system dashboards",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "Admin email Address" },
+        "createdAt": { "type": "object", "description": "The timestamp when admin was authorized" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Individual client profiles"
+    },
+    "admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Admin authorized profiles"
+    }
+  }
+}
